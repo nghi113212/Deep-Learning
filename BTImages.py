@@ -223,7 +223,7 @@ def main():
         num_workers=args.workers, pin_memory=True)        
     if args.evaluate:
         m = time.time()
-        _, _ =validate(val_loader, model, criterion)
+        _, _, _ = validate(val_loader, model, criterion)
         n = time.time()
         print((n-m)/3600)
         return
@@ -254,12 +254,14 @@ def main():
 
         # evaluate on validation set
         # prec1 = validate(val_loader, model, criterion)
-        prec1, prec5 = validate(val_loader, model, criterion)
+        prec1, prec5, loss_val = validate(val_loader, model, criterion)
         val_prec1_plot[epoch] = prec1
         val_prec5_plot[epoch] = prec5
 
         # remember best prec@1 and save checkpoint
         is_best = prec1 > best_prec1
+        if is_best:
+            epoch_max = epoch
         best_prec1 = max(prec1, best_prec1)
         save_checkpoint({
             'epoch': epoch + 1,
@@ -276,7 +278,7 @@ def main():
         data_save(directory + 'val_prec1.txt', val_prec1_plot)
         data_save(directory + 'val_prec5.txt', val_prec5_plot)
         
-        line = 'Epoch {}/{} summary: loss_train={:.5f}, acc_train={:.2f}%, loss_val={:.2f}, acc_val={:.2f}% (best: {:.2f}% @ epoch {})'.format(epoch, args.epochs, loss_temp, train_prec1_temp, 0, prec1, best_prec1, epoch_max)
+        line = 'Epoch {}/{} summary: loss_train={:.5f}, acc_train={:.2f}%, loss_val={:.5f}, acc_val={:.2f}% (best: {:.2f}% @ epoch {})'.format(epoch, args.epochs, loss_temp, train_prec1_temp, loss_val, prec1, best_prec1, epoch_max)
         wA.writeLogAcc(filenameLOG,line)
         end_time = time.time()
         time_value = (end_time - start_time) / 3600
@@ -379,7 +381,7 @@ def validate(val_loader, model, criterion):
         print(' * Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'
               .format(top1=top1, top5=top5))
 
-    return top1.avg, top5.avg
+    return top1.avg, top5.avg, losses.avg
 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
